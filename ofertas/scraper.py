@@ -32,7 +32,6 @@ def scrape():
     try:
         driver.get(url)
 
-        # Aguardar até o campo de pesquisa estar visível
         search_box = WebDriverWait(driver, 10).until(
             EC.visibility_of_element_located((By.NAME, "as_word"))
         )
@@ -40,15 +39,12 @@ def scrape():
         search_box.send_keys(busca)
         search_box.send_keys(Keys.RETURN)
 
-        # Rolando até o fundo da página para carregar todos os produtos
         scroll_to_bottom(driver)
 
-        # Buscar os produtos na página
         produtos = WebDriverWait(driver, 10).until(
             EC.presence_of_all_elements_located((By.CSS_SELECTOR, ".ui-search-result"))
         )
 
-        # Armazenar links para evitar duplicação
         produtos_processados = set()
 
         for produto in produtos:
@@ -63,7 +59,6 @@ def scrape():
                     print(f"Link não encontrado para o produto {nome}: {e}")
                     link = None
 
-                # Verifique se o link do produto já foi processado
                 if link in produtos_processados:
                     print(f"Produto {nome} já foi processado.")
                     continue
@@ -73,7 +68,7 @@ def scrape():
                 tipo_entrega = produto.find_element(By.CLASS_NAME, "poly-component__shipped-from").text
                 frete_gratis = "Frete grátis" in produto.text
 
-                # Verificando o conteúdo do preço sem desconto
+
                 try:
                     preco_sem_desconto = produto.find_element(By.CLASS_NAME, "andes-money-amount--previous .andes-money-amount__fraction").text
                 except Exception:
@@ -81,17 +76,15 @@ def scrape():
                 
                 try:
                     percentual_desconto_str = produto.find_element(By.CLASS_NAME, "andes-money-amount__discount").text
-                    percentual_desconto = int(re.search(r'\d+', percentual_desconto_str).group())  # Ex: '15%' -> 15
+                    percentual_desconto = int(re.search(r'\d+', percentual_desconto_str).group())
                 except Exception:
                     percentual_desconto = None
 
-                # Extrair informações de parcelamento, se houver
                 try:
                     parcelamento = produto.find_element(By.CLASS_NAME, "poly-price__installments").text
                 except Exception:
                     parcelamento = None
 
-                # Salvar produto no banco de dados
                 if link:
                     Produto.objects.create(
                         nome=nome,
